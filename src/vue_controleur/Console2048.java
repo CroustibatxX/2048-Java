@@ -11,13 +11,10 @@ public class Console2048 extends Thread implements Observer {
 
     private Jeu jeu;
 
-
-
     public Console2048(Jeu _jeu) {
         jeu = _jeu;
 
     }
-
 
     @Override
     public void run() {
@@ -62,7 +59,7 @@ public class Console2048 extends Thread implements Observer {
 
                         if (s.equals("4") || s.equals("8") || s.equals("6") || s.equals("2") ) {
                             end = true;
-                            jeu.rnd();
+                            jeu.init();
                         }
                     }
 

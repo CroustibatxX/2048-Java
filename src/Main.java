@@ -26,8 +26,6 @@ public class Main {
         jeu.addObserver(vue);
 
         vue.setVisible(true);
-
-
     }
 
 
