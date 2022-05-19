@@ -26,6 +26,11 @@ public class Jeu extends Observable {
         return tabCases.length;
     }
 
+    public void setTabCases(int size) {
+        tabCases = new Case[size][size];
+        restartGame();
+    }
+
     public Case getCase(int i, int j) {
         return tabCases[i][j];
     }
@@ -68,7 +73,7 @@ public class Jeu extends Observable {
     }
 
     public void move(Direction direction){
-        Swing2048.displayLoosePopup(this);
+        System.out.println("ça bouge");
         checkLoose();
         if(!endgame){
             if(direction == Direction.droite) {

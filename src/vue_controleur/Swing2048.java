@@ -18,17 +18,98 @@ public class Swing2048 extends JFrame implements Observer {
     // tableau de cases : i, j -> case graphique
     private JLabel[][] tabC;
     private Jeu jeu;
+    private JLabel statusLabel;
+    private JPanel contentPane;
 
 
     public Swing2048(Jeu _jeu) {
         jeu = _jeu;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("2048 - BERRY DEREMBLE");
+
+        // création du menu
+        JMenuBar menuBar = new JMenuBar();
+        JMenu actionMenu = new JMenu("Action");
+        JMenu gameModeMenu = new JMenu("Game Mode");
+
+        // création des sous-menus*
+        JMenuItem restartMenuItem = new JMenuItem("Restart");
+        restartMenuItem.setActionCommand("Restart");
+
+        JMenuItem x4MenuItem = new JMenuItem("4x4");
+        x4MenuItem.setActionCommand("4x4");
+
+        JMenuItem x5MenuItem = new JMenuItem("5x5");
+        x5MenuItem.setActionCommand("5x5");
+
+        JMenuItem x8MenuItem = new JMenuItem("8x8");
+        x8MenuItem.setActionCommand("8x8");
+
+        // ajout des listeners aux sous-menus
+        restartMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jeu.restartGame();
+            }
+        });
+
+        x4MenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jeu.setTabCases(4);
+                getContentPane().remove(contentPane);
+                createPane();
+
+            }
+        });
+
+        x5MenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jeu.setTabCases(5);
+                getContentPane().remove(contentPane);
+                createPane();
+            }
+        });
+
+        x8MenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jeu.setTabCases(8);
+                getContentPane().remove(contentPane);
+                createPane();
+            }
+        });
+
+
+        // ajout des sous-menu aux menus
+        actionMenu.add(restartMenuItem);
+        gameModeMenu.add(x4MenuItem);
+        gameModeMenu.add(x5MenuItem);
+        gameModeMenu.add(x8MenuItem);
+
+        // ajout des menus à la menubar
+        menuBar.add(actionMenu);
+        menuBar.add(gameModeMenu);
+
+        // ajout de la menubar au JFrame
+        setJMenuBar(menuBar);
+
+        // ajout du JPanel au JFrame
+        setVisible(true);
+
+
+        createPane();
+        ajouterEcouteurClavier();
+        rafraichir();
+
+    }
+
+    private void createPane(){
         setSize(jeu.getSize() * PIXEL_PER_SQUARE, jeu.getSize() * PIXEL_PER_SQUARE);
         tabC = new JLabel[jeu.getSize()][jeu.getSize()];
 
-
-        JPanel contentPane = new JPanel(new GridLayout(jeu.getSize(), jeu.getSize()));
-
+        contentPane = new JPanel(new GridLayout(jeu.getSize(), jeu.getSize()));
         for (int i = 0; i < jeu.getSize(); i++) {
             for (int j = 0; j < jeu.getSize(); j++) {
                 Border border = BorderFactory.createLineBorder(Color.decode("#bbada0"), 5);
@@ -43,13 +124,10 @@ public class Swing2048 extends JFrame implements Observer {
 
             }
         }
+        add(contentPane);
+
         setContentPane(contentPane);
-        ajouterEcouteurClavier();
-        rafraichir();
-
     }
-
-
 
 
     /**
@@ -172,8 +250,10 @@ public class Swing2048 extends JFrame implements Observer {
     }
 
 
+
     @Override
     public void update(Observable o, Object arg) {
         rafraichir();
     }
 }
+
