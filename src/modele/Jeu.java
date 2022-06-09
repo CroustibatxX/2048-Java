@@ -1,23 +1,85 @@
 package modele;
 import vue_controleur.Swing2048;
 
+import java.io.*;
 import java.util.*;
 
 public class Jeu extends Observable {
 
-    public Case[][] tabCases;
-    public HashMap<Case,Point> map = new HashMap<>();
+    private Case[][] tabCases;
+    private HashMap<Case,Point> map = new HashMap<>();
 
-    public boolean endgame = false;
+    private int score = 0;
+
+    private boolean endgame = false;
+
+    public int getScore() {
+        return score;
+    }
 
     public Jeu(int size) {
         tabCases = new Case[size][size];
         init();
     }
 
+    public void saveScore(){
+        try {
+            List<Integer> scores = getSavedScore();
+            Collections.sort(scores,Collections.reverseOrder());
+            if(scores.size() < 5){
+                scores.add(score);
+                Collections.sort(scores,Collections.reverseOrder());
+            }
+            else if(score > scores.get(scores.size() - 1)){
+                scores.remove(scores.size() - 1);
+                scores.add(score);
+                Collections.sort(scores,Collections.reverseOrder());
+            }
+
+            FileWriter writer = new FileWriter(getScoreFile(), false);
+            for (int i=0; i < scores.size(); i++) {
+                writer.write(Integer.toString(scores.get(i))+ "\n");
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getScoreFile(){
+        String scoreFile = "score.txt";
+        switch(getSize()) {
+            case 5:
+                scoreFile = "score5.txt";
+                break;
+            case 8:
+                scoreFile = "score8.txt";
+                break;
+        }
+        return scoreFile;
+    }
+
+    public List<Integer> getSavedScore(){
+        List<Integer> scores = new ArrayList<Integer>();
+        try {
+            FileReader reader = new FileReader(getScoreFile());
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                scores.add(Integer.parseInt(line));
+            }
+            reader.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return scores;
+    }
 
     public void restartGame(){
         endgame = false;
+        saveScore();
+        score = 0;
         map.clear();
         init();
     }
@@ -37,20 +99,17 @@ public class Jeu extends Observable {
 
     public void init() {
         //On rempli le tableau à null
-
         for (int i = 0; i < getSize(); i++) {
             for (int j = 0; j < getSize(); j++) {
                 tabCases[i][j] = new Case(0, this);
             }
         }
-        System.out.println(tabCases);
         //On ajoute 2 cases
         for (int i = 0; i < 2; i++) {
             addCase();
         }
         setChanged();
         notifyObservers();
-        System.out.println(tabCases);
     }
 
 
@@ -73,8 +132,6 @@ public class Jeu extends Observable {
     }
 
     public void move(Direction direction){
-        System.out.println("ça bouge");
-        checkLoose();
         if(!endgame){
             if(direction == Direction.droite) {
                 for (int i = getSize() - 1 ; i >= 0; i--) {
@@ -112,7 +169,12 @@ public class Jeu extends Observable {
                 }
             }
             addCase();
+            if(checkLoose()){
+                this.endgame = true;
+                Swing2048.displayLoosePopup(this);
+            }
         }
+
     }
 
     public void addCase() {
@@ -178,7 +240,9 @@ public class Jeu extends Observable {
         }
     }
 
-    private boolean isMovable(){
+    //Renvoie true si aucun mouvement n'est possible et donc que la partie est perdue
+    private boolean checkLoose(){
+        //S'il n'y a plus de case vide
         if(emptyCases().isEmpty()){
             //On vérifie chaque case
             for (int i = 0; i < getSize(); i++) {
@@ -187,22 +251,14 @@ public class Jeu extends Observable {
                     for (Direction dir : Direction.values()) {
                         Case neighbour = this.getNeighbour(dir,cell);
                         if(cell.getValeur() == neighbour.getValeur()){
-                            endgame = true;
-                            return true;
+                            return false;
                         }
                     }
                 }
             }
-            return false;
+            return true;
         }
-        return true;
-    }
-
-    private void checkLoose(){
-        //On vérifie si un mouvement est possible
-        if(!isMovable()){
-            Swing2048.displayLoosePopup(this);
-        }
+        return false;
     }
 
     public void fusion(Case cell, Case neighbour){
@@ -217,7 +273,7 @@ public class Jeu extends Observable {
             neighbour.setValeur(value);
             setChanged();
             notifyObservers();
-
+            score += value;
             checkWin(value);
         }
     }

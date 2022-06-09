@@ -10,6 +10,7 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -18,8 +19,11 @@ public class Swing2048 extends JFrame implements Observer {
     // tableau de cases : i, j -> case graphique
     private JLabel[][] tabC;
     private Jeu jeu;
-    private JLabel statusLabel;
+    private JPanel mainPane;
     private JPanel contentPane;
+
+    private JLabel scoreLabel;
+    private JLabel bestScores;
 
 
     public Swing2048(Jeu _jeu) {
@@ -27,12 +31,15 @@ public class Swing2048 extends JFrame implements Observer {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("2048 - BERRY DEREMBLE");
 
+
+        mainPane = new JPanel(new BorderLayout());
+
         // création du menu
         JMenuBar menuBar = new JMenuBar();
         JMenu actionMenu = new JMenu("Action");
         JMenu gameModeMenu = new JMenu("Game Mode");
 
-        // création des sous-menus*
+        // création des sous-menus
         JMenuItem restartMenuItem = new JMenuItem("Restart");
         restartMenuItem.setActionCommand("Restart");
 
@@ -88,6 +95,26 @@ public class Swing2048 extends JFrame implements Observer {
         gameModeMenu.add(x5MenuItem);
         gameModeMenu.add(x8MenuItem);
 
+        // create a label to display text
+        JPanel infoPane = new JPanel(new BorderLayout());
+        infoPane.setPreferredSize(new Dimension(150,200));
+        infoPane.setBackground(Color.decode("#DCC9AE"));
+        scoreLabel = new JLabel();
+        scoreLabel.setFont(scoreLabel.getFont().deriveFont(20.0f));
+        scoreLabel.setText(" Score: " + jeu.getScore());
+        scoreLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        // add label to panel
+        infoPane.add(scoreLabel,BorderLayout.NORTH);
+
+        bestScores = new JLabel();
+        infoPane.add(bestScores);
+        bestScores.setFont(scoreLabel.getFont().deriveFont(16.0f));
+        bestScores.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+
+        mainPane.add(infoPane, BorderLayout.EAST);
+        displayBestScores();
+
+
         // ajout des menus à la menubar
         menuBar.add(actionMenu);
         menuBar.add(gameModeMenu);
@@ -106,10 +133,11 @@ public class Swing2048 extends JFrame implements Observer {
     }
 
     private void createPane(){
-        setSize(jeu.getSize() * PIXEL_PER_SQUARE, jeu.getSize() * PIXEL_PER_SQUARE);
+        setSize(jeu.getSize() * PIXEL_PER_SQUARE + 100, jeu.getSize() * PIXEL_PER_SQUARE);
         tabC = new JLabel[jeu.getSize()][jeu.getSize()];
 
         contentPane = new JPanel(new GridLayout(jeu.getSize(), jeu.getSize()));
+        contentPane.setSize(jeu.getSize() * PIXEL_PER_SQUARE , jeu.getSize() * PIXEL_PER_SQUARE);
         for (int i = 0; i < jeu.getSize(); i++) {
             for (int j = 0; j < jeu.getSize(); j++) {
                 Border border = BorderFactory.createLineBorder(Color.decode("#bbada0"), 5);
@@ -124,9 +152,9 @@ public class Swing2048 extends JFrame implements Observer {
 
             }
         }
-        add(contentPane);
+        mainPane.add(contentPane);
 
-        setContentPane(contentPane);
+        setContentPane(mainPane);
     }
 
 
@@ -156,6 +184,10 @@ public class Swing2048 extends JFrame implements Observer {
                         String color = updateColor(c.getValeur());
                         tabC[i][j].setBackground(Color.decode(color));
                         tabC[i][j].setForeground(Color.decode(textColor));
+
+                        scoreLabel.setText(" Score: "+ jeu.getScore());
+                        displayBestScores();
+
                     }
                 }
             }
@@ -205,6 +237,19 @@ public class Swing2048 extends JFrame implements Observer {
 
     }
 
+    private void displayBestScores(){
+        List<Integer> scores = jeu.getSavedScore();
+        String display = "<html>Meilleurs scores: ";
+        for (int i=0; i < scores.size(); i++) {
+            int score = scores.get(i);
+            if(score != 0){
+                display += (i+1) + ". "+ scores.get(i) + "<br/>";
+            }
+        }
+        display += "</html>";
+        bestScores.setText(display);
+    }
+
     /**
      * Correspond à la fonctionnalité de Contrôleur : écoute les évènements, et déclenche des traitements sur le modèle
      */
@@ -231,7 +276,7 @@ public class Swing2048 extends JFrame implements Observer {
 
     public static void displayLoosePopup(Jeu game){
         JFrame frame = new JFrame();
-        JDialog dialog = new JDialog(frame , "Dialog Example", true);
+        JDialog dialog = new JDialog(frame , "Perdu", true);
         dialog.setLayout( new FlowLayout() );
         JButton b = new JButton ("Relancer");
         b.addActionListener ( new ActionListener()
@@ -244,7 +289,7 @@ public class Swing2048 extends JFrame implements Observer {
         });
         dialog.add( new JLabel ("C'est perdu, dommage !"));
         dialog.add(b);
-        dialog.setSize(200,150);
+        dialog.setSize(200,110);
         dialog.setVisible(true);
 
     }
