@@ -142,7 +142,7 @@ public class Swing2048 extends JFrame implements Observer {
             for (int j = 0; j < jeu.getSize(); j++) {
                 Border border = BorderFactory.createLineBorder(Color.decode("#bbada0"), 5);
                 tabC[i][j] = new JLabel();
-                tabC[i][j].setFont(new Font("", Font.BOLD, 18));
+                tabC[i][j].setFont(new Font("", Font.BOLD, 20));
                 tabC[i][j].setBorder(border);
                 tabC[i][j].setHorizontalAlignment(SwingConstants.CENTER);
 
