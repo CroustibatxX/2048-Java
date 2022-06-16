@@ -1,7 +1,10 @@
 package modele;
+import Service.HistoryData;
+import Service.HistoryService;
 import vue_controleur.Swing2048;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class Jeu extends Observable {
@@ -9,7 +12,12 @@ public class Jeu extends Observable {
     private Case[][] tabCases;
     private HashMap<Case,Point> map = new HashMap<>();
 
+    private final HistoryService histoService;
+
     private int score = 0;
+
+    //Gestion mouvement case
+    private boolean moved = false;
 
     private boolean endgame = false;
 
@@ -17,9 +25,14 @@ public class Jeu extends Observable {
         return score;
     }
 
-    public Jeu(int size) {
+    public Jeu(int size,HistoryService histoService) {
+        this.histoService = histoService;
         tabCases = new Case[size][size];
         init();
+    }
+
+    public Jeu getGame(){
+        return this;
     }
 
     public void saveScore(){
@@ -98,6 +111,7 @@ public class Jeu extends Observable {
     }
 
     public void init() {
+        histoService.clear();
         //On rempli le tableau à null
         for (int i = 0; i < getSize(); i++) {
             for (int j = 0; j < getSize(); j++) {
@@ -108,8 +122,8 @@ public class Jeu extends Observable {
         for (int i = 0; i < 2; i++) {
             addCase();
         }
-        setChanged();
-        notifyObservers();
+        histoService.savePlay(tabCases, score);
+        updateScreen();
     }
 
 
@@ -132,49 +146,77 @@ public class Jeu extends Observable {
     }
 
     public void move(Direction direction){
-        if(!endgame){
-            if(direction == Direction.droite) {
-                for (int i = getSize() - 1 ; i >= 0; i--) {
-                    for (int j = getSize() - 1; j >= 0; j--) {
-                        if(tabCases[j][i].getValeur() != 0){
-                            tabCases[j][i].move(direction);
-                        }
-                    }
-                }
-            }else if (direction == Direction.bas){
-                for (int i = getSize() - 1 ; i >= 0; i--) {
-                    for (int j = getSize() - 1; j >= 0; j--) {
-                        if(tabCases[i][j].getValeur() != 0){
-                            tabCases[i][j].move(direction);
-                        }
-                    }
-                }
-            }
-            else if (direction == Direction.gauche){
-                for (int i = 0; i < getSize(); i++) {
-                    for (int j = 0; j < getSize(); j++) {
-                        if(tabCases[j][i].getValeur() != 0){
-                            tabCases[j][i].move(direction);
-                        }
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < getSize(); i++) {
-                    for (int j = 0; j < getSize(); j++) {
-                        if(tabCases[i][j].getValeur() != 0){
-                            tabCases[i][j].move(direction);
-                        }
-                    }
-                }
-            }
-            addCase();
-            if(checkLoose()){
-                this.endgame = true;
-                Swing2048.displayLoosePopup(this);
-            }
-        }
+        new Thread(){
+            public void run(){
+                if(!endgame){
+                    moved = false;
+                    switch(direction) {
+                        case droite :
+                            for (int i = getSize() - 1 ; i >= 0; i--) {
+                                for (int j = getSize() - 1; j >= 0; j--) {
+                                    if(tabCases[j][i].getValeur() != 0){
+                                        tabCases[j][i].move(direction);
+                                    }
+                                }
+                            }
+                        case bas:
+                            for (int i = getSize() - 1 ; i >= 0; i--) {
+                                for (int j = getSize() - 1; j >= 0; j--) {
+                                    if(tabCases[i][j].getValeur() != 0){
+                                        tabCases[i][j].move(direction);
+                                    }
+                                }
+                            }
+                        case gauche:
+                            for (int i = 0; i < getSize(); i++) {
+                                for (int j = 0; j < getSize(); j++) {
+                                    if(tabCases[j][i].getValeur() != 0){
+                                        tabCases[j][i].move(direction);
+                                    }
+                                }
+                            }
+                        case haut:
+                            for (int i = 0; i < getSize(); i++) {
+                                for (int j = 0; j < getSize(); j++) {
+                                    if(tabCases[i][j].getValeur() != 0){
+                                        tabCases[i][j].move(direction);
+                                    }
+                                }
+                            }
 
+
+                    }
+                    //Si un mouvement s'est effectuer on ajoute une case
+                    if(moved){
+                        addCase();
+                        histoService.savePlay(tabCases, score);
+                    }
+
+                    if(checkLoose()){
+                        Jeu game = getGame();
+                        game.endgame = true;
+                        Swing2048.displayLoosePopup(game);
+                    }
+                }
+            }
+        }.start();
+
+
+    }
+
+    public void lastMove(){
+        HistoryData data = histoService.back();
+        if(data != null){
+            int[][] tab = data.getTab();
+            score = data.getScore();
+            for (int i = 0; i < getSize(); ++i) {
+                for (int j = 0; j < getSize(); ++j) {
+                    tabCases[j][i].setValeur(tab[j][i]);
+                    map.put(tabCases[j][i], new Point(j,i));
+                }
+            }
+            updateScreen();
+        }
     }
 
     public void addCase() {
@@ -190,6 +232,9 @@ public class Jeu extends Observable {
             Case cell = new Case(number, this);
             tabCases[point.x][point.y] = cell;
             map.put(cell, point);
+
+            moved = true;
+            updateScreen();
         }
     }
 
@@ -268,13 +313,12 @@ public class Jeu extends Observable {
             Point point = map.get(cell);
             tabCases[point.x][point.y].setValeur(0);
             //On fussione la nouvelle case
-
             int value = neighbour.getValeur()*2;
             neighbour.setValeur(value);
-            setChanged();
-            notifyObservers();
             score += value;
             checkWin(value);
+
+            updateScreen();
         }
     }
 
@@ -310,7 +354,15 @@ public class Jeu extends Observable {
         }
 
         tabCases[point.x][point.y] = cell;
-        map.put(cell, new Point(point.x, point.y));
+        map.put(cell, point);
+        moved = true;
+
+        updateScreen();
+    }
+
+
+
+    private void updateScreen(){
         setChanged();
         notifyObservers();
     }

@@ -263,6 +263,7 @@ public class Swing2048 extends JFrame implements Observer {
                     case KeyEvent.VK_RIGHT : jeu.move(Direction.droite); break;
                     case KeyEvent.VK_DOWN : jeu.move(Direction.bas); break;
                     case KeyEvent.VK_UP : jeu.move(Direction.haut); break;
+                    case KeyEvent.VK_R: jeu.lastMove(); break;
                 }
             }
         });
