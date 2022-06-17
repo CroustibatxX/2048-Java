@@ -29,8 +29,11 @@ public class Case {
                     game.moveCase(direction, this);
                 }
                 else{
-                    //Case non vide
-                    game.fusion(this, neighbour);
+                    if(getValeur() == neighbour.getValeur()){
+                        //Case non vide
+                        game.fusion(this, neighbour);
+                    }
+
                 }
             }
         }

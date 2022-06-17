@@ -2,12 +2,11 @@ package Service;
 
 import modele.Case;
 
-import java.io.*;
 import java.util.*;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import com.google.gson.Gson;
-import modele.Jeu;
+import modele.HistoryData;
 
 public class HistoryService {
     private Preferences prefs;

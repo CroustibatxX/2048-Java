@@ -1,10 +1,9 @@
 package modele;
-import Service.HistoryData;
 import Service.HistoryService;
+import Service.ScoreService;
 import vue_controleur.Swing2048;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class Jeu extends Observable {
@@ -13,20 +12,16 @@ public class Jeu extends Observable {
     private HashMap<Case,Point> map = new HashMap<>();
 
     private final HistoryService histoService;
-
-    private int score = 0;
+    private final ScoreService scoreService;
 
     //Gestion mouvement case
     private boolean moved = false;
 
     private boolean endgame = false;
 
-    public int getScore() {
-        return score;
-    }
-
-    public Jeu(int size,HistoryService histoService) {
+    public Jeu(int size,HistoryService histoService, ScoreService scoreService) {
         this.histoService = histoService;
+        this.scoreService = scoreService;
         tabCases = new Case[size][size];
         init();
     }
@@ -35,64 +30,20 @@ public class Jeu extends Observable {
         return this;
     }
 
-    public void saveScore(){
-        try {
-            List<Integer> scores = getSavedScore();
-            Collections.sort(scores,Collections.reverseOrder());
-            if(scores.size() < 5){
-                scores.add(score);
-                Collections.sort(scores,Collections.reverseOrder());
-            }
-            else if(score > scores.get(scores.size() - 1)){
-                scores.remove(scores.size() - 1);
-                scores.add(score);
-                Collections.sort(scores,Collections.reverseOrder());
-            }
-
-            FileWriter writer = new FileWriter(getScoreFile(), false);
-            for (int i=0; i < scores.size(); i++) {
-                writer.write(Integer.toString(scores.get(i))+ "\n");
-            }
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private String getScoreFile(){
-        String scoreFile = "score.txt";
-        switch(getSize()) {
-            case 5:
-                scoreFile = "score5.txt";
-                break;
-            case 8:
-                scoreFile = "score8.txt";
-                break;
-        }
-        return scoreFile;
+    public int getScore(){
+        return scoreService.getScore();
     }
 
     public List<Integer> getSavedScore(){
-        List<Integer> scores = new ArrayList<Integer>();
-        try {
-            FileReader reader = new FileReader(getScoreFile());
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                scores.add(Integer.parseInt(line));
-            }
-            reader.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return scores;
+        return scoreService.getSavedScore(getSize());
     }
+
+
 
     public void restartGame(){
         endgame = false;
-        saveScore();
-        score = 0;
+        scoreService.saveScore(getSize());
+        scoreService.scoreReset();
         map.clear();
         init();
     }
@@ -122,7 +73,7 @@ public class Jeu extends Observable {
         for (int i = 0; i < 2; i++) {
             addCase();
         }
-        histoService.savePlay(tabCases, score);
+        histoService.savePlay(tabCases, scoreService.getScore());
         updateScreen();
     }
 
@@ -189,7 +140,7 @@ public class Jeu extends Observable {
                     //Si un mouvement s'est effectuer on ajoute une case
                     if(moved){
                         addCase();
-                        histoService.savePlay(tabCases, score);
+                        histoService.savePlay(tabCases, scoreService.getScore());
                     }
 
                     if(checkLoose()){
@@ -204,11 +155,12 @@ public class Jeu extends Observable {
 
     }
 
+    //Permet de revenir en arrière
     public void lastMove(){
         HistoryData data = histoService.back();
         if(data != null){
             int[][] tab = data.getTab();
-            score = data.getScore();
+            scoreService.setScore(data.getScore());
             for (int i = 0; i < getSize(); ++i) {
                 for (int j = 0; j < getSize(); ++j) {
                     tabCases[j][i].setValeur(tab[j][i]);
@@ -219,6 +171,7 @@ public class Jeu extends Observable {
         }
     }
 
+    //Permet d'ajouter une case
     public void addCase() {
         List<Point> emptyCells = emptyCases();
         //S'il y a des cases vides
@@ -306,21 +259,21 @@ public class Jeu extends Observable {
         return false;
     }
 
+    //Permet de fusionner 2 cases
     public void fusion(Case cell, Case neighbour){
-        if(cell.getValeur() == neighbour.getValeur()){
-            //On vide la case
-            cell.setValeur(0);
-            Point point = map.get(cell);
-            tabCases[point.x][point.y].setValeur(0);
-            //On fussione la nouvelle case
-            int value = neighbour.getValeur()*2;
-            neighbour.setValeur(value);
-            score += value;
-            checkWin(value);
+        //On vide la case
+        cell.setValeur(0);
+        Point point = map.get(cell);
+        tabCases[point.x][point.y].setValeur(0);
+        //On fussione la nouvelle case
+        int value = neighbour.getValeur()*2;
+        neighbour.setValeur(value);
+        scoreService.updateScore(value);
+        checkWin(value);
 
-            updateScreen();
-        }
+        updateScreen();
     }
+
 
     public void moveCase(Direction direction, Case cell){
         Point point = map.get(cell);

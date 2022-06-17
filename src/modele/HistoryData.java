@@ -1,4 +1,4 @@
-package Service;
+package modele;
 
 public final class HistoryData {
     private final int[][] tab;
